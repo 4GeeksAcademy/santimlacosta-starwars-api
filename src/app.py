@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
-from flask_bcrypt import Bcryptgit add .
+""" from flask_bcrypt import Bcryptgit """
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, People, Planets, Vehicles
@@ -246,7 +246,7 @@ def signup():
     user = User.query.filter_by(email=email).first()
 
     if user != None:
-         return jsonify({"msg" : "FEste usuario ya existe"}),401
+         return jsonify({"msg" : "Este usuario ya existe"}),401
 
     user = User(name=name, last_name=last_name, email=email, password=password)
 
@@ -265,9 +265,9 @@ def signup():
 # without a valid JWT present. RUTAS PROTEGIDAS
 @app.route("/protected", methods=["GET"])
 @jwt_required()
-    def get_info_profile():
+def get_info_profile():
      # Access the identity of the current user with get_jwt_identity#     current_user = get_jwt_identity()
-     User.query.filter_by(email=current_user).first() #Hacemos consulta a la BBDD de cualquier dato
+    User.query.filter_by(email=current_user).first() #Hacemos consulta a la BBDD de cualquier dato
     
     print(user.serialize()) # Recibimos el objeto con toda la info
     #return jsonify(logged_in_as=current_user), 200
