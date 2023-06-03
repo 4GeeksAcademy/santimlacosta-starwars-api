@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
-""" from flask_bcrypt import Bcryptgit """
+from flask_bcrypt import Bcrypt
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, People, Planets, Vehicles
@@ -33,6 +33,8 @@ setup_admin(app)
 app.config["JWT_SECRET_KEY"] = "keySecret"  # Change this!
 jwt = JWTManager(app)
 
+bcrypt = Bcrypt(app)
+
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -45,6 +47,79 @@ def sitemap():
     return generate_sitemap(app)
 
 # EMPIEZAN LOS ENDPOINTS
+
+# Endpoint de Acceso
+
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+
+    user = User.query.filter_by(email=email).first() #Comprobamos si existe el email en la BBDD
+
+    #print(user.password)
+
+    if user is None:
+       return jsonify({"msg": "Este usuario no exsite"}), 404 
+
+       #None.email
+    if email != user.email or password != user.password:
+        return jsonify({"msg": "Las credenciales no son correctas"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+
+    name = request.json.get("name", None)
+    last_name = request.json.get("last_name", None)
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    if name is None:
+        return jsonify({"msg" : "Falta el nombre"}),400
+    
+    if last_name is None:
+        return jsonify({"msg" : "Falta el apellido"}),400
+                       
+    if email is None:
+        return jsonify({"msg" : "Falta el email"}),400
+                       
+    if password is None:
+        return jsonify({"msg" : "Falta el password"}),400
+                       
+    user = User.query.filter_by(email=email).first()
+
+    if user != None:
+         return jsonify({"msg" : "Este usuario ya existe"}),401
+    
+    pw_hash = bcrypt.generate_password_hash("password").decode("utf-8")
+
+
+    add_user = User(name=name, last_name=last_name, email=email, password=pw_hash)
+
+    db.session.add(add_user)
+    db.session.commit()
+
+    return jsonify({"msg" : "Usuario creado correctamente"}),200
+        
+
+
+
+#  RUTAS PROTEGIDAS
+@app.route("/protected", methods=["GET"])
+@jwt_required()
+def get_info_profile():
+     # Access the identity of the current user with get_jwt_identity#     current_user = get_jwt_identity()
+    User.query.filter_by(email=current_user).first() #Hacemos consulta a la BBDD de cualquier dato
+    
+    print(user.serialize()) # Recibimos el objeto con toda la info
+    #return jsonify(logged_in_as=current_user), 200
+    return jsonify({"user":"user.serialize()"}), 200
+
 
 #Endpoints GET
 @app.route('/user', methods=['GET'])
@@ -199,79 +274,6 @@ def create_user():
          "msg": "El usuario ha sido creado",
     }
     return jsonify(response_body), 200    
-
-# Endpoint de Acceso
-
-# Create a route to authenticate your users and return JWTs. The
-# create_access_token() function is used to actually generate the JWT.
-@app.route("/login", methods=["POST"])
-def login():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-
-    user = User.query.filter_by(email=email).first() #Comprobamos si existe el email en la BBDD
-
-    print(user.password)
-
-    if user is None:
-       return jsonify({"msg": "User does not exists"}), 404 
-
-       #None.email
-    if email != user.email or password != user.password:
-        return jsonify({"msg": "Bad email or password"}), 401
-
-    access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
-
-@app.route("/signup", methods=["POST"])
-def signup():
-
-    name = request.json.get("name", None)
-    last_name = request.json.get("last_name", None)
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-
-    if name is None:
-        return jsonify({"msg" : "Falta el nombre"}),400
-    
-    if last_name is None:
-        return jsonify({"msg" : "Falta el apellido"}),400
-                       
-    if email is None:
-        return jsonify({"msg" : "Falta el email"}),400
-                       
-    if password is None:
-        return jsonify({"msg" : "Falta el password"}),400
-                       
-    user = User.query.filter_by(email=email).first()
-
-    if user != None:
-         return jsonify({"msg" : "Este usuario ya existe"}),401
-
-    user = User(name=name, last_name=last_name, email=email, password=password)
-
-    db.session(user)
-    db.session.commit()
-
-
-
-    return jsonify({"msg" : "Usuario creado correctamente"}),200
-        
-
-        
-
-
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present. RUTAS PROTEGIDAS
-@app.route("/protected", methods=["GET"])
-@jwt_required()
-def get_info_profile():
-     # Access the identity of the current user with get_jwt_identity#     current_user = get_jwt_identity()
-    User.query.filter_by(email=current_user).first() #Hacemos consulta a la BBDD de cualquier dato
-    
-    print(user.serialize()) # Recibimos el objeto con toda la info
-    #return jsonify(logged_in_as=current_user), 200
-    return jsonify({"user":"user.serialize()"}), 200
 
 
 # this only runs if `$ python src/app.py` is executed
