@@ -57,7 +57,7 @@ def login():
 
 
     user = User.query.filter_by(email=email).first() #Comprobamos si existe el email en la BBDD
-
+    
 
     if user is None:
        return jsonify({"msg": "Este usuario no exsite"}), 404 
@@ -128,7 +128,7 @@ def handle_user():
 
     results = User.query.all()
     if not results:
-        return "" , 204
+        return ({"msg":"No hay ningún usuario creado"}) , 204
 
     users_list = list(map(lambda item: item.serialize(),results))
 
@@ -180,7 +180,7 @@ def handle_planets():
 
     results = Planets.query.all()
     if not results:
-        return "" , 204
+        return jsonify({"msg":"No hay ningún planeta creado"}), 204
         
     planets_list = list(map(lambda item: item.serialize(),results))
 
@@ -204,6 +204,7 @@ def get_user(id):
          return jsonify({"msg":"Este usuario no existe"}), 404
     
      response_body = {
+         "msg": "Estos son los datos del usuario solicitado",
          "result": user.serialize()
      }
 
@@ -391,11 +392,11 @@ def delete_people_favorite(people_id,user_id):
 
 # ENDPOINT PARA BORRAR UN PLANETA FAVORITA DE UN USUARIO
 @app.route('/favorites/planets/<int:planets_id>/<int:user_id>', methods=['DELETE'])
-def delete_people_favorite(planets_id,user_id):
+def delete_planets_favorite(planets_id,user_id):
 
     planets_favorite = Favorite_planets.query.filter_by(planets_id=planets_id).first()
     user = User.query.filter_by(id=user_id).first()
-
+  
     if user is None:
         return jsonify({"msg":"Este usuario no existe"}), 404
    
@@ -411,7 +412,7 @@ def delete_people_favorite(planets_id,user_id):
 
 # ENDPOINT PARA BORRAR UN VEHICULO FAVORITA DE UN USUARIO
 @app.route('/favorites/vehicles/<int:vehicles_id>/<int:user_id>', methods=['DELETE'])
-def delete_people_favorite(vehicles_id,user_id):
+def delete_vehicles_favorite(vehicles_id,user_id):
 
     vehicles_favorite = Favorite_vehicles.query.filter_by(vehicles_id=vehicles_id).first()
     user = User.query.filter_by(id=user_id).first()
